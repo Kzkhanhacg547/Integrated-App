@@ -1,0 +1,390 @@
+const express = require('express');
+const multer = require('multer');
+const sqlite3 = require('sqlite3').verbose();
+const path = require('path');
+const fs = require('fs');
+const fs2 = require('fs-extra');
+const bodyParser = require('body-parser');
+
+const app = express();
+
+// Database setup
+const dbPath = path.resolve(__dirname, "data.db");
+const db = new sqlite3.Database(dbPath);
+
+db.serialize(() => {
+  db.run(
+    "CREATE TABLE IF NOT EXISTS posts (id INTEGER PRIMARY KEY, content TEXT, image TEXT, video TEXT, audio TEXT, author TEXT)"
+  );
+});
+
+// Multer setup
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'public/uploads/');
+  },
+  filename: (req, file, cb) => {
+    const currentDate = new Date();
+    const timestamp = currentDate.toISOString().replace(/[-:]/g, '').replace('T', '').split('.')[0];
+    const originalName = file.originalname.replace(/\s+/g, '_');
+    let newFileName = `${req.body.fileName || 'file'}_${timestamp}_${originalName}`;
+    let counter = 0;
+    while (fs.existsSync(path.join(__dirname, 'public/uploads', newFileName))) {
+      counter++;
+      newFileName = `${req.body.fileName || 'file'}_${timestamp}_${counter}_${originalName}`;
+    }
+    cb(null, newFileName);
+  }
+});
+
+const upload = multer({ storage: storage });
+
+// Middleware
+app.set("view engine", "ejs");
+app.use(express.static("public"));
+app.use(express.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+
+// Routes
+app.get("/blog", (req, res) => {
+  db.all("SELECT * FROM posts", (err, rows) => {
+    if (err) {
+      console.error(err);
+      res.status(500).send("Internal Server Error");
+      return;
+    }
+    res.render("index", { posts: rows });
+  });
+});
+
+app.get("/admin", (req, res) => {
+  db.all("SELECT * FROM posts", (err, rows) => {
+    if (err) {
+      console.error(err);
+      res.status(500).send("Internal Server Error");
+      return;
+    }
+    res.render("admin", { posts: rows });
+  });
+});
+
+app.post("/upload", upload.fields([
+  { name: "image" },
+  { name: "video" },
+  { name: "audio" },
+  { name: "file" }
+]), (req, res) => {
+  const { content, author, fileName } = req.body;
+  const images = req.files["image"] ? req.files["image"].map(file => file.filename) : [];
+  const videos = req.files["video"] ? req.files["video"].map(file => file.filename) : [];
+  const audios = req.files["audio"] ? req.files["audio"].map(file => file.filename) : [];
+  const files = req.files["file"] ? req.files["file"].map(file => file.filename) : [];
+
+  if (content && author) {
+    db.run(
+      "INSERT INTO posts (content, image, video, audio, author) VALUES (?, ?, ?, ?, ?)",
+      [content, images.join(","), videos.join(","), audios.join(","), author],
+      (err) => {
+        if (err) {
+          console.error(err);
+          res.status(500).send("Internal Server Error");
+          return;
+        }
+        res.redirect("/blog");
+      }
+    );
+  } else {
+    res.redirect('/');
+  }
+});
+
+app.post("/admin/delete/:id", (req, res) => {
+  const postId = req.params.id;
+  db.run("DELETE FROM posts WHERE id = ?", postId, (err) => {
+    if (err) {
+      console.error(err);
+      res.status(500).send("Internal Server Error");
+      return;
+    }
+    res.redirect("/admin");
+  });
+});
+
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+app.get('/upload', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'upload.html'));
+});
+
+app.get('/uploads/:fileName', (req, res) => {
+  const fileName = req.params.fileName;
+  const filePath = path.join(__dirname, 'public/uploads', fileName);
+
+  if (fs.existsSync(filePath)) {
+    res.sendFile(filePath);
+  } else {
+    res.status(404).send('File not found');
+  }
+});
+
+app.get('/files', (req, res) => {
+  fs.readdir('public/uploads', (err, files) => {
+    if (err) {
+      res.status(500).send('Error retrieving files');
+    } else {
+      res.json(files);
+    }
+  });
+});
+
+app.delete('/delete/:fileName', (req, res) => {
+  const fileName = req.params.fileName;
+  const filePath = path.join(__dirname, 'public/uploads', fileName);
+
+  fs.unlink(filePath, (err) => {
+    if (err) {
+      console.error('Error deleting file:', err);
+      res.status(500).send('Error deleting file');
+    } else {
+      res.sendStatus(200);
+    }
+  });
+});
+
+app.get('/file-list', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'files.html'));
+});
+
+app.get('/ad', (req, res) => {
+  res.sendFile(path.join(__dirname, 'ad.html'));
+});
+
+app.get('/json', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'edit.html'));
+});
+
+app.post('/update-json', (req, res) => {
+  const { appName, appVersion, appLink } = req.body;
+
+  const filePath = path.join(__dirname, 'public', 'app.json');
+  fs.readFile(filePath, 'utf8', (err, data) => {
+    if (err) {
+      return res.status(500).json({ error: 'Could not read file' });
+    }
+
+    let jsonData = JSON.parse(data);
+
+    if (!jsonData[appName]) {
+      jsonData[appName] = { versions: [] };
+    }
+    jsonData[appName].versions.push({ number: appVersion, link: appLink });
+
+    fs.writeFile(filePath, JSON.stringify(jsonData, null, 2), 'utf8', (err) => {
+      if (err) {
+        return res.status(500).json({ error: 'Could not write file' });
+      }
+
+      res.json({ message: 'Data added successfully' });
+    });
+  });
+});
+
+app.use('/cache', express.static('cache'));
+
+// Read and store all command files
+const commandsDir = path.join(__dirname, 'cmd');
+const commands = {};
+
+fs.readdirSync(commandsDir).forEach(file => {
+  if (file.endsWith('.js')) {
+    const commandName = path.basename(file, '.js');
+    const commandPath = path.join(commandsDir, file);
+    commands[commandName] = require(commandPath);
+  }
+});
+
+const clearCache = async () => {
+  const cacheDir = path.join(__dirname, 'cache');
+  await fs2.emptyDir(cacheDir);
+  const cacheDir2 = path.join(__dirname, 'cmd', 'cache');
+  await fs2.emptyDir(cacheDir2);
+};
+
+app.get('/api/check-cache', (req, res) => {
+  const cacheDir = path.join(__dirname, 'cache');
+  fs.readdir(cacheDir, (err, files) => {
+    if (err) {
+      console.error('Error reading cache directory:', err);
+      return res.status(500).json({ error: 'Failed to read cache directory' });
+    }
+
+    const mediaFiles = files.filter(file => /\.(mp4|mp3|jpg|png|gif)$/i.test(file));
+    if (mediaFiles.length > 0) {
+      const fileUrl = `/cache/${mediaFiles[0]}`;
+      return res.json({ fileUrl });
+    } else {
+      return res.json({});
+    }
+  });
+});
+
+app.get('/chatbot', async (req, res) => {
+  const commandName = req.query.cmd;
+  const option = req.query.option;
+
+  if (commands[commandName]) {
+    try {
+      await commands[commandName].run({ option, res });
+    } catch (error) {
+      res.status(500).send('Error executing command.');
+    }
+  } else {
+    res.status(404).send('Command not found.');
+  }
+});
+
+app.post('/api/command', async (req, res) => {
+  const { command, args } = req.body;
+  await clearCache(); // Clear cache before executing the command
+  if (commands[command]) {
+    try {
+      const result = await commands[command].run({ args });
+      res.json(result);
+    } catch (error) {
+      console.error(`Error processing command: ${error}`);
+      res.status(500).json({ error: error.message });
+    }
+  } else {
+    res.status(404).json({ error: 'Command not found' });
+  }
+});
+
+
+
+
+
+
+/////////////////////////////////////////////////////////////////////////////
+//////////////////////////////CAPCUT////////////////////////////////////////
+
+app.get('/get-capcut-url', async (req, res) => {
+  try {
+    const { link } = req.query;
+    if (!link) {
+      return res.status(400).json({ error: 'Missing CapCut link' });
+    }
+
+    const apiUrl = `https://ssscap.net/api/download/get-url?url=${encodeURIComponent(link)}`;
+    const response = await axios.get(apiUrl);
+
+    const url = response.data.url;
+    const templateId = extractTemplateId(url);
+
+    res.json({ template_id: templateId });
+  } catch (error) {
+    console.error('Error fetching CapCut URL:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+function extractTemplateId(url) {
+  try {
+    const regex = /template_id=([0-9]+)/;
+    const match = url.match(regex);
+    if (match && match[1]) {
+      return match[1];
+    } else {
+      return null;
+    }
+  } catch (error) {
+    console.error('Error extracting template_id:', error);
+    return null;
+  }
+}
+
+app.get('/capcut', async (req, res) => {
+  try {
+    const { link } = req.query;
+    if (!link) {
+      return res.status(400).json({ error: 'Missing CapCut link' });
+    }
+
+    const templateId = await getCapcutTemplateId(link);
+    if (!templateId) {
+      return res.status(500).json({ error: 'Failed to extract template_id' });
+    }
+
+    const capcutInfo = await downloadCapcutTemplate(templateId);
+    const downloadUrl = `https://ssscap.net${capcutInfo.originalVideoUrl}`;
+
+    const result = {
+      templateId,
+      downloadUrl,
+      capcutInfo
+    };
+
+    res.json(result);
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+async function getCapcutTemplateId(link) {
+  try {
+    const response = await axios.get(`https://ycf2qr-3000.csb.app/get-capcut-url?link=${encodeURIComponent(link)}`);
+    return response.data.template_id;
+  } catch (error) {
+    console.error('Error getting Capcut info:', error.message);
+    throw error;
+  }
+}
+
+async function downloadCapcutTemplate(templateId) {
+  const options = {
+    method: 'GET',
+    url: `https://ssscap.net/api/download/${templateId}`,
+    headers: {
+      'Connection': 'keep-alive',
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36',
+      'Cookie': 'sign=08321c1cc11dbdd2d6e3c63f44248dcf; device-time=1699454542608',
+      'Referer': 'https://ssscap.net/vi',
+      'Host': 'ssscap.net',
+      'Accept-Language': 'vi-VN,vi;q=0.9',
+      'Accept': 'application/json, text/plain, */*',
+      'Sec-Fetch-Dest': 'empty',
+      'Sec-Fetch-Site': 'same-origin',
+      'Sec-Fetch-Mode': 'cors'
+    }
+  };
+
+  try {
+    const response = await axios(options);
+    return response.data;
+  } catch (error) {
+    console.error('Error downloading Capcut template:', error.message);
+    throw error;
+  }
+}
+
+
+/////////////////////////////END CAPCUT//////////////////////////////////////////
+
+// Define the ports you want to use// Remove the function to get a random port
+// const getRandomPort = () => {
+//   return Math.floor(Math.random() * (4000 - 3000) + 3000);
+// };
+
+// Use port 2007 directly
+const port = 2007;
+
+// Check if the port is in use
+app.listen(port, (err) => {
+  if (err) {
+    console.error(`Error: Port ${port} is already in use. Please choose another port.`);
+    process.exit(1);
+  }
+  console.log(`Server is running on http://localhost:${port}`);
+});

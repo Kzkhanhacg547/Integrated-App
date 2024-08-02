@@ -1,0 +1,109 @@
+<!-- admin.ejs -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <link rel="icon" href="https://i.imgur.com/LgBuHXx.png">
+   <title>Admin Panel</title>
+   <link rel="stylesheet" href="/style.css">
+   <style>
+       .post {
+           border: 1px solid #ccc;
+           border-radius: 5px;
+           padding: 10px;
+           margin-bottom: 20px;
+           max-width: 800px; /* Thêm max-width */
+           margin: 0 auto; /* Căn giữa */
+       }
+
+       .post-content {
+           margin-bottom: 10px;
+       }
+
+       .post-media {
+           display: flex;
+           flex-wrap: wrap;
+           justify-content: center; /* Căn giữa các phần tử media */
+           margin-bottom: 10px;
+       }
+
+       .media-item {
+           margin-right: 10px;
+           margin-bottom: 10px;
+           max-width: 200px; /* Giới hạn kích thước các phần tử media */
+           border-radius: 5px;
+           overflow: hidden;
+           margin: 0 auto; /* Căn giữa các phần tử media */
+       }
+
+       .media-item img,
+       .media-item video,
+       .media-item audio {
+           width: 100%;
+           height: auto;
+       }
+
+       .post-actions {
+           display: flex;
+           justify-content: center; /* Căn giữa các nút */
+       }
+
+       @media (max-width: 600px) {
+           .media-item {
+               max-width: calc(50% - 10px);
+           }
+       }
+   </style>
+</head>
+<body>
+   <h1>Admin Panel</h1>
+   <div id="posts">
+       <% posts.forEach(post => { %>
+           <div class="post">
+               <div class="post-content"><%= post.content %></div>
+               <div class="post-media">
+                   <% if (post.image) {
+                       const images = post.image.split(',');
+                       images.slice(0, 3).forEach(image => { %>
+                           <div class="media-item">
+                               <img src="/uploads/<%= image %>" alt="Image">
+                           </div>
+                       <% }) %>
+                   <% } %>
+
+                   <% if (post.video) {
+                       const videos = post.video.split(',');
+                       videos.slice(0, 3).forEach(video => { %>
+                           <div class="media-item">
+                               <video controls>
+                                   <source src="/uploads/<%= video %>" type="video/mp4">
+                                   Your browser does not support the video tag.
+                               </video>
+                           </div>
+                       <% }) %>
+                   <% } %>
+
+                   <% if (post.audio) {
+                       const audios = post.audio.split(',');
+                       audios.slice(0, 3).forEach(audio => { %>
+                           <div class="media-item">
+                               <audio controls>
+                                   <source src="/uploads/<%= audio %>" type="audio/mpeg">
+                                   Your browser does not support the audio tag.
+                               </audio>
+                           </div>
+                       <% }) %>
+                   <% } %>
+               </div>
+               <div class="post-actions">
+                   <form action="/admin/delete/<%= post.id %>" method="post">
+                       <button type="submit">Delete</button>
+                   </form>
+               </div>
+           </div>
+       <% }) %>
+   </div>
+</body>
+</html>

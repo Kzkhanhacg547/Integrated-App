@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="https://i.imgur.com/LgBuHXx.png">
+    <meta name="robots" content="noindex">
+    <title>Blog</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .header h1 {
+            color: #333;
+        }
+        .header img {
+            max-width: 100px;
+        }
+        form {
+            padding: 20px;
+            margin-bottom: 30px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        form textarea,
+        form input[type="file"] {
+            width: calc(100% - 22px);
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        form button {
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        form button:hover {
+            background-color: #0056b3;
+        }
+        #posts {
+            display: flex;
+            flex-direction: column-reverse;
+        }
+        .post {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        .post pre {
+            white-space: pre-wrap;
+            overflow-x: auto;
+        }
+        .post-media {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            margin-top: 10px;
+        }
+        .post-media img {
+            max-width: calc(33.33% - 10px);
+        }
+        .post-media video {
+            max-width: 45%;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        @media (max-width: 600px) {
+            .post-media img,
+            .post-media video {
+                max-width: 100%;
+            }
+        }
+        .footer {
+            text-align: center;
+            padding: 10px 0;
+            background-color: #333;
+            color: #fff;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Blog</h1>
+            <img src="https://i.imgur.com/V2e6B8J.png" alt="Logo">
+        </div>
+        <form action="/upload" method="post" enctype="multipart/form-data">
+            <div class="form-group">
+                <textarea name="content" placeholder="Write something..." required></textarea>
+            </div>
+            <div class="form-group">
+                <input type="text" name="author" placeholder="Author Name" required>
+            </div>
+            <div class="form-group">
+                <input type="file" name="image" accept="image/*" multiple>
+            </div>
+            <div class="form-group">
+                <input type="file" name="video" accept="video/*" multiple>
+            </div>
+            <div class="form-group">
+                <input type="file" name="audio" accept="audio/*" multiple>
+            </div>
+            <div class="form-group">
+                <button type="submit"><i class="fas fa-paper-plane"></i> Submit</button>
+            </div>
+        </form>
+        <div id="posts">
+            <% posts.forEach(post => { %>
+                <div class="post">
+                    <h3>Author: <%= post.author %></h3>
+                    <pre><%= post.content %></pre>
+                    <div class="post-media">
+                        <% if (post.image) { 
+                          const images = post.image.split(',');
+                          images.forEach(image => { %>
+                            <img src="/uploads/<%= image %>" alt="Image">
+                        <% }) %>
+                        <% } %>
+                        <% if (post.video) { 
+                          const videos = post.video.split(',');
+                          videos.forEach(video => { %>
+                            <video controls>
+                              <source src="/uploads/<%= video %>" type="video/mp4">
+                              Your browser does not support the video tag.
+                            </video>
+                        <% }) %>
+                        <% } %>
+                        <% if (post.audio) { 
+                          const audios = post.audio.split(',');
+                          audios.forEach(audio => { %>
+                            <audio controls>
+                              <source src="/uploads/<%= audio %>" type="audio/mpeg">
+                              Your browser does not support the audio tag.
+                            </audio>
+                        <% }) %>
+                        <% } %>
+                    </div>
+                </div>
+            <% }) %>
+        </div>
+    </div>
+    <div class="footer">
+        &copy; 2024 Kz Blog. All rights reserved.
+    </div>
+</body>
+</html>

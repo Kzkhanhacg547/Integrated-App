@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    
+<link rel="icon" href="https://i.imgur.com/LgBuHXx.png">
+    <title>Professional File Upload</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f8f9fa;
+        }
+        .container {
+            text-align: center;
+            padding: 20px;
+            border: 1px solid #ced4da;
+            border-radius: 8px;
+            background-color: #fff;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease-in-out;
+        }
+        .container:hover {
+            transform: translateY(-5px);
+        }
+        h1 {
+            margin-bottom: 30px;
+            color: #343a40;
+        }
+        input[type="file"] {
+            margin-bottom: 20px;
+        }
+        input[type="text"] {
+            margin-bottom: 20px;
+            padding: 10px;
+            border: 1px solid #ced4da;
+            border-radius: 5px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        button[type="submit"] {
+            padding: 12px 24px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button[type="submit"]:hover {
+            background-color: #0056b3;
+        }
+        .redirect-button {
+            padding: 12px 24px;
+            background-color: #28a745;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-top: 20px;
+        }
+        .redirect-button:hover {
+            background-color: #218838;
+        }
+        .upload-message {
+            margin-top: 20px;
+            color: #28a745;
+            font-size: 14px;
+        }
+    </style>
+    
+</head>
+<body>
+    <div class="container">
+        <h1>Professional File Upload</h1>
+
+        <form id="uploadForm" action="/upload" method="post" enctype="multipart/form-data">
+            <input type="text" name="fileName" placeholder="Enter file name"> <!-- Thêm input cho người dùng nhập tên file -->
+            <input type="file" name="file" id="fileInput" multiple> <!-- Thêm thuộc tính multiple để cho phép tải lên nhiều file -->
+            <button type="submit">Upload</button>
+        </form>
+        <!-- Add the redirect button -->
+        <button class="redirect-button" onclick="window.location.href='/file-list'">View Uploaded Files</button>
+        <!-- Upload message -->
+        <div class="upload-message" id="uploadMessage"></div>
+    </div>
+
+    <script>
+        // Hiệu ứng cho input file khi hover
+        const fileInput = document.getElementById('fileInput');
+        fileInput.addEventListener('mouseover', function() {
+            this.style.opacity = '0.8';
+        });
+        fileInput.addEventListener('mouseout', function() {
+            this.style.opacity = '1';
+        });
+
+        // Hiệu ứng cho nút upload khi hover
+        const uploadButton = document.querySelector('button[type="submit"]');
+        uploadButton.addEventListener('mouseover', function() {
+            this.style.backgroundColor = '#0056b3';
+        });
+        uploadButton.addEventListener('mouseout', function() {
+            this.style.backgroundColor = '#007bff';
+        });
+
+        // Show upload message
+        const uploadForm = document.getElementById('uploadForm');
+        uploadForm.addEventListener('submit', function(event) {
+            event.preventDefault(); // Ngăn chặn việc gửi form mặc định
+
+            const files = document.getElementById('fileInput').files;
+            const uploadMessage = document.getElementById('uploadMessage');
+
+            // Duyệt qua từng file để thực hiện upload và hiển thị thông báo
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const fileName = document.querySelector('input[name="fileName"]').value || file.name; // Lấy tên file từ input hoặc tên file gốc
+                const formData = new FormData();
+                formData.append('fileName', fileName);
+                formData.append('file', file);
+
+                // Gửi AJAX request để upload file
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', '/upload', true);
+                xhr.onload = function() {
+                    if (xhr.status === 200) {
+                        uploadMessage.innerHTML += `File "${fileName}" has been uploaded.<br>`;
+                    } else {
+                        uploadMessage.innerHTML += `Error uploading file "${fileName}".<br>`;
+                    }
+                };
+                xhr.send(formData);
+            }
+        });
+    </script>
+</body>
+</html>

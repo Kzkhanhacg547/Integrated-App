@@ -1,0 +1,589 @@
+```
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Integrated Chatbot, SoundCloud & YouTube</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.21.1/axios.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2c3e50;
+            --text-color: #333;
+            --bg-color: #ecf0f1;
+            --sidebar-width: 250px;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            height: 100vh;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+        }
+
+        .sidebar {
+            width: var(--sidebar-width);
+            background-color: var(--secondary-color);
+            color: white;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar h1 {
+            margin-bottom: 30px;
+            font-size: 1.5em;
+            text-align: center;
+        }
+
+        .sidebar-nav {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        .sidebar-nav li {
+            margin-bottom: 15px;
+        }
+
+        .sidebar-nav a {
+            color: white;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+
+        .sidebar-nav a:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar-nav i {
+            margin-right: 10px;
+        }
+
+        .main-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .content-area {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .section {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h2 {
+            color: var(--primary-color);
+            font-size: 1.5em;
+            margin-top: 0;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 5px;
+            max-width: 80%;
+        }
+
+        .user-message {
+            background-color: var(--primary-color);
+            color: white;
+            align-self: flex-end;
+        }
+
+        .bot-message {
+            background-color: #e1e1e1;
+            align-self: flex-start;
+        }
+
+        .input-container {
+            padding: 20px;
+            background-color: white;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+        }
+
+        #unified-input {
+            width: calc(100% - 20px);
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1em;
+            margin-bottom: 10px;
+        }
+
+        .button-group {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        button {
+            padding: 10px 15px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            flex-grow: 1;
+            margin: 0 5px;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        .track-item, .video-card {
+            background-color: white;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            padding: 15px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .track-item:hover, .video-card:hover {
+            background-color: #f5f5f5;
+        }
+
+        .track-number {
+            font-weight: bold;
+            color: var(--primary-color);
+            margin-right: 10px;
+        }
+
+        #player, iframe {
+            width: 100%;
+            margin-top: 15px;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        #youtube iframe {
+            width: 700px;
+            height: 450px;
+            max-width: 100%;
+            display: block;
+            margin: 15px auto;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .media-container {
+            max-width: 100%;
+            margin-top: 15px;
+        }
+
+        .media-container img, .media-container video {
+            max-width: 100%;
+            border-radius: 8px;
+        }
+
+        .media-container audio {
+            width: 100%;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(52, 152, 219, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(52, 152, 219, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(52, 152, 219, 0); }
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        #bg-color-btn {
+            margin-bottom: 15px;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #bg-color-btn span {
+            width: 20px;
+            height: 20px;
+            display: inline-block;
+            margin-right: 10px;
+            border-radius: 50%;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h1>Integrated App</h1>
+        <ul class="sidebar-nav">
+            <li><a href="#chatbot"><i class="fas fa-comments"></i> Chatbot</a></li>
+            <li><a href="#soundcloud"><i class="fab fa-soundcloud"></i> SoundCloud</a></li>
+            <li><a href="#youtube"><i class="fab fa-youtube"></i> YouTube</a></li>
+        </ul>
+    </div>
+    <div class="main-content">
+        <div class="content-area">
+            <div id="chatbot" class="section">
+                <h2><i class="fas fa-comments"></i> Chatbot</h2>
+                <div id="chat-messages"></div>
+            </div>
+            <div id="soundcloud" class="section">
+                <h2><i class="fab fa-soundcloud"></i> SoundCloud Player</h2>
+                <div id="tracks"></div>
+                <div id="player"></div>
+            </div>
+            <div id="youtube" class="section">
+                <h2><i class="fab fa-youtube"></i> YouTube Viewer</h2>
+                <button id="bg-color-btn" onclick="changeBackgroundColor()">
+                    <span id="color-preview"></span>Change background color
+                </button>
+                <div id="videoList"></div>
+            </div>
+        </div>
+        <div class="input-container">
+            <input type="text" id="unified-input" placeholder="Type a message, search for music or videos...">
+            <div class="button-group">
+                <button onclick="sendMessage()"><i class="fas fa-paper-plane"></i> Send</button>
+                <button onclick="searchSoundCloud()"><i class="fab fa-soundcloud"></i> Search Music</button>
+                <button onclick="searchYoutube()"><i class="fab fa-youtube"></i> Search Videos</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const chatMessages = document.getElementById('chat-messages');
+        const unifiedInput = document.getElementById('unified-input');
+        function changeBackgroundColor() {
+            const newColor = '#' + Math.floor(Math.random()*16777215).toString(16);
+            document.body.style.backgroundColor = newColor;
+            document.getElementById('color-preview').style.backgroundColor = newColor;
+        }
+
+        // Initialize color preview
+        changeBackgroundColor();
+
+        // Smooth scrolling for sidebar navigation
+        document.querySelectorAll('.sidebar-nav a').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+        
+        async function sendMessage() {
+            const message = unifiedInput.value.trim();
+            if (message) {
+                // Add the user's message to the chat
+                addMessage('user', message);
+                // Clear the input field
+                unifiedInput.value = '';
+
+                let botReply;
+                // Check if the message is a download request
+                if (message.toLowerCase().includes('tải') || message.toLowerCase().startsWith('tôi muốn tải')) {
+                    // Handle download request
+                    botReply = await handleDownloadRequest(message);
+                } else {
+                    // Handle other types of messages
+                    const [command, ...args] = message.split(' ');
+                    try {
+                        const response = await fetch('/api/command', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ command, args }),
+                        });
+                        const result = await response.json();
+                        botReply = result.message;
+
+                        // Handle media and audio URLs if present
+                        if (result.mediaUrl) {
+                            addMessage('bot', botReply, result.mediaUrl);
+                        } else if (result.audioUrl) {
+                            addMessage('bot', botReply, null, result.audioUrl);
+                        } else {
+                            addMessage('bot', botReply);
+                        }
+
+                        // Return early to avoid adding the message again
+                        return;
+                    } catch (error) {
+                        botReply = 'Error: ' + error.message;
+                    }
+                }
+
+                // Add the bot's reply to the chat
+                addMessage('bot', botReply);
+            }
+        }
+
+        function addMessage(sender, text, mediaUrl = null, audioUrl = null) {
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('message', sender === 'user' ? 'user-message' : 'bot-message');
+
+            const textWithLineBreaks = text.replace(/\n/g, '<br>');
+            messageDiv.innerHTML = textWithLineBreaks;
+
+            if (mediaUrl) {
+                const mediaContainer = document.createElement('div');
+                mediaContainer.className = 'media-container';
+
+                if (mediaUrl.endsWith('.mp4')) {
+                    const video = document.createElement('video');
+                    video.src = mediaUrl;
+                    video.controls = true;
+                    mediaContainer.appendChild(video);
+                } else if (mediaUrl.endsWith('.jpg') || mediaUrl.endsWith('.png')) {
+                    const img = document.createElement('img');
+                    img.src = mediaUrl;
+                    mediaContainer.appendChild(img);
+                }
+
+                messageDiv.appendChild(mediaContainer);
+            }
+
+            if (audioUrl) {
+                const audioElement = document.createElement('audio');
+                audioElement.src = audioUrl;
+                audioElement.controls = true;
+                messageDiv.appendChild(audioElement);
+
+                // Auto-play the audio
+                audioElement.play().catch(e => console.error("Auto-play failed:", e));
+            }
+
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function addMessage(sender, text, mediaUrl = null, audioUrl = null) {
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('message', sender === 'user' ? 'user-message' : 'bot-message');
+
+            const textWithLineBreaks = text.replace(/\n/g, '<br>');
+            messageDiv.innerHTML = textWithLineBreaks;
+
+            if (mediaUrl) {
+                const mediaContainer = document.createElement('div');
+                mediaContainer.className = 'media-container';
+                
+                if (mediaUrl.endsWith('.mp4')) {
+                    const video = document.createElement('video');
+                    video.src = mediaUrl;
+                    video.controls = true;
+                    mediaContainer.appendChild(video);
+                } else if (mediaUrl.endsWith('.jpg') || mediaUrl.endsWith('.png')) {
+                    const img = document.createElement('img');
+                    img.src = mediaUrl;
+                    mediaContainer.appendChild(img);
+                }
+                
+                messageDiv.appendChild(mediaContainer);
+            }
+
+            if (audioUrl) {
+                const mediaContainer = document.createElement('div');
+                mediaContainer.className = 'media-container';
+                const audio = document.createElement('audio');
+                audio.src = audioUrl;
+                audio.controls = true;
+                mediaContainer.appendChild(audio);
+                messageDiv.appendChild(mediaContainer);
+            }
+
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function searchSoundCloud() {
+            const keyword = unifiedInput.value.trim();
+            if (keyword) {
+                var apiKey = "kzkhanhz7517222606";
+                var apiUrl = "https://j8c2z9-2007.csb.app/soundcloud/search?apikey=" + apiKey + "&keyword=" + encodeURIComponent(keyword);
+
+                fetch(apiUrl)
+                    .then((response) => response.json())
+                    .then((data) => {
+                        if (data.collection.length > 0) {
+                            var tracksHtml = "";
+                            data.collection.forEach(function (track, index) {
+                                tracksHtml += `
+                                <div class="track-item" data-uri="${track.uri}" onclick="playTrack('${track.uri}')">
+                                    <div class="track-number">${index + 1}</div>
+                                    <div class="track-title">${track.title}</div>
+                                </div>
+                                `;
+                            });
+                            document.getElementById("tracks").innerHTML = tracksHtml;
+                        } else {
+                            document.getElementById("tracks").innerHTML = '<p style="text-align: center;">No tracks found</p>';
+                        }
+                    })
+                    .catch((error) => {
+                        console.error("Error:", error);
+                        document.getElementById("tracks").innerHTML = '<p style="text-align: center;">Error fetching data</p>';
+                    });
+            }
+        }
+
+        function playTrack(trackUri) {
+            var playerHtml = `
+            <iframe id="soundCloudPlayer" width="100%" height="166" scrolling="no" frameborder="no" allow="autoplay" 
+            src="https://w.soundcloud.com/player/?url=${trackUri}&color=%23ff4757&auto_play=true&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=true">
+            </iframe>
+            `;
+            var playerContainer = document.getElementById("player");
+            playerContainer.innerHTML = playerHtml;
+            playerContainer.classList.add("pulse");
+            setTimeout(() => playerContainer.classList.remove("pulse"), 2000);
+        }
+
+        function searchYoutube() {
+            const keyword = unifiedInput.value.trim();
+            if (keyword) {
+                axios.get('https://www.googleapis.com/youtube/v3/search', {
+                    params: {
+                        part: 'snippet',
+                        maxResults: 10,
+                        key: 'AIzaSyB2w3bNAHWIDxG2RbCpskSKGnu8g5eu8RM',
+                        type: 'video',
+                        videoDefinition: 'high',
+                        videoEmbeddable: true,
+                        q: keyword
+                    }
+                })
+                .then(function (response) {
+                    const videos = response.data.items;
+                    const videoList = document.querySelector('#videoList');
+                    videoList.innerHTML = '';
+                    for (let i = 0; i < videos.length; i++) {
+                        const videoId = videos[i].id.videoId;
+                        const videoTitle = videos[i].snippet.title;
+                        const videoCard = document.createElement('div');
+                        videoCard.className = 'video-card';
+                        videoCard.innerHTML = `
+                            <h3>${videoTitle}</h3>
+                            <iframe width="100%" height="215" src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe>
+                        `;
+                        videoList.appendChild(videoCard);
+                    }
+                })
+                .catch(function (error) {
+                    console.log(error);
+                    document.querySelector('#videoList').innerHTML = '<p style="text-align: center;">Error fetching videos</p>';
+                });
+            }
+        }
+
+        unifiedInput.addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        async function handleDownloadRequest(message) {
+            try {
+                const response = await fetch('./json/app.json');
+                const data = await response.json();
+
+                const appName = message.toLowerCase().replace('tôi muốn tải ', '').replace('tải ', '').trim();
+
+                if (data[appName]) {
+                    const versions = data[appName].versions;
+                    let replyMessage = `Các phiên bản ${appName} có sẵn:\n`;
+                    versions.forEach(version => {
+                        replyMessage += `Phiên bản ${version.number}: ${version.link}\n`;
+                    });
+                    return replyMessage;
+                } else {
+                    return `Xin lỗi, không tìm thấy thông tin về ứng dụng "${appName}".`;
+                }
+            } catch (error) {
+                console.error('Error reading app data:', error);
+                return 'Xin lỗi, đã xảy ra lỗi khi xử lý yêu cầu của bạn.';
+            }
+        }
+    </script>
+</body>
+</html>
+```
+
+
+Tôi muốn khi phản hồi tin nhắn thì nó sẽ đọc kèm âm thanh, đoạn code sau có thể có ích:
+```
+const axios = require('axios');
+const fs = require('fs-extra');
+const path = require('path');
+const moment = require('moment-timezone');
+
+module.exports.config = {
+  name: "say",
+  version: "1.0.1",
+  hasPermssion: 0,
+  credits: "Mirai Team",
+  description: "Khiến bot trả về file âm thanh của chị google thông qua văn bản",
+  commandCategory: "Công cụ",
+  usages: "[ru/en/ko/ja] [Text]",
+  cooldowns: 5,
+  dependencies: {
+    "path": "",
+    "fs-extra": "",
+    "axios": ""
+  }
+};
+
+module.exports.run = async function({ api, event, args }) {
+  try {
+    var timeNow = moment.tz("Asia/Ho_Chi_Minh").format("HH:mm:ss");
+    if (args.length == 0) return api.sendMessage(`=== 𝗩𝗢𝗜𝗖𝗘𝗦 ===\n━━━━━━━━━━━━━━━━━━\n→ 𝗖𝗮́𝗰𝗵 𝗦𝘂̛̉ 𝗗𝘂̣𝗻𝗴\n→ /say: 𝗣𝗵𝗮̉𝗻 𝗵𝗼̂̀𝗶 𝘁𝗶𝗻 𝗻𝗵𝗮̆́𝗻 𝗰𝘂̉𝗮 𝗯𝗮̣𝗻 𝘁𝗵𝗲𝗼 𝗱𝗮̣𝗻𝗴 𝘁𝗶𝗲̂́𝗻𝗴 𝗩𝗶𝗲̣̂𝘁 𝗡𝗮𝗺 🇻🇳\n→ /say 𝗿𝘂: 𝗣𝗵𝗮̉𝗻 𝗵𝗼̂̀𝗶 𝘁𝘂̛̀ 𝗻𝗴𝘂̛̃ 𝗰𝘂̉𝗮 𝗯𝗮̣𝗻 𝘁𝗵𝗲𝗼 𝗱𝗮̣𝗻𝗴 𝗴𝗶𝗼̣𝗻𝗴 𝗻𝗼́𝗶 𝗰𝗵𝗶̣ 𝗚𝗼𝗼𝗴𝗹𝗲 𝗡𝘂̛𝗼̛́𝗰 𝗡𝗴𝗮 🇷🇺\n→ /say 𝗷𝗮: 𝗣𝗵𝗮̉𝗻 𝗵𝗼̂̀𝗶 𝘁𝘂̛̀ 𝗻𝗴𝘂̛̃ 𝗰𝘂̉𝗮 𝗯𝗮̣𝗻 𝘁𝗵𝗲𝗼 𝗱𝗮̣𝗻𝗴 𝗴𝗶𝗼̣𝗻𝗴 𝗻𝗼́𝗶 𝗰𝗵𝗶̣ 𝗚𝗼𝗼𝗴𝗹𝗲 𝗡𝘂̛𝗼̛́𝗰 𝗡𝗵𝗮̣̂𝘁 𝗕𝗮̉𝗻 🇯🇵\n→ /say 𝗸𝗼: 𝗣𝗵𝗮̉𝗻 𝗵𝗼̂̀𝗶 𝘁𝘂̛̀ 𝗻𝗴𝘂̛̃ 𝗰𝘂̉𝗮 𝗯𝗮̣𝗻 𝘁𝗵𝗲𝗼 𝗡𝘂̛𝗼̛́𝗰 𝗛𝗮̀𝗻 𝗤𝘂𝗼̂́𝗰 🇰🇷\n=====「${timeNow} 」=====`, event.threadID, event.messageID);
+
+    const { createReadStream, unlinkSync } = fs;
+    const { resolve } = path;
+    var content = (event.type == "message_reply") ? event.messageReply.body : args.join(" ");
+    var languageToSay = (["ru", "vi","en","ko","ja"].some(item => content.indexOf(item) == 0)) ? content.slice(0, content.indexOf(" ")) : global.config.language;
+    var msg = (languageToSay != global.config.language) ? content.slice(3, content.length) : content;
+    const filePath = resolve(__dirname, 'cache', `${event.threadID}_${event.senderID}.mp3`);
+
+    const response = await axios({
+      method: 'get',
+      url: `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(msg)}&tl=${languageToSay}&client=tw-ob`,
+      responseType: 'stream'
+    });
+
+    // Pipe the response data to a file
+    const writer = fs.createWriteStream(filePath);
+    response.data.pipe(writer);
+
+    // Ensure the file is fully written before proceeding
+    writer.on('finish', () => {
+      api.sendMessage({ attachment: createReadStream(filePath) }, event.threadID, () => unlinkSync(filePath));
+    });
+
+    writer.on('error', (err) => {
+      console.error(err);
+      unlinkSync(filePath);
+    });
+  } catch (e) {
+    console.log(e);
+  }
+}
+```
+vietnamese??

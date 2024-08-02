@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Integrated App</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.21.1/axios.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f4f4f4;
+        }
+
+        .container {
+            max-width: 2000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .sidebar {
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            padding: 20px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            width: 250px;
+            overflow-y: auto;
+        }
+
+        .sidebar h1 {
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+
+        .sidebar-nav {
+            list-style-type: none;
+        }
+
+        .sidebar-nav li {
+            margin-bottom: 10px;
+        }
+
+        .sidebar-nav a {
+            color: #ecf0f1;
+            text-decoration: none;
+            font-size: 18px;
+            display: block;
+            padding: 10px;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+
+        .sidebar-nav a:hover {
+            background-color: #34495e;
+        }
+
+        .main-content {
+            margin-left: 250px;
+            padding: 20px;
+        }
+
+        .section {
+            background-color: #fff;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .section h2 {
+            margin-bottom: 15px;
+            color: #2c3e50;
+            font-size: 24px;
+        }
+
+        .input-container {
+            display: flex;
+            flex-direction: column;
+            margin-top: 20px;
+        }
+
+        .input-field {
+            padding: 12px;
+            font-size: 16px;
+            border: 1px solid #bdc3c7;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .button-group button {
+            padding: 12px 20px;
+            font-size: 16px;
+            background-color: #3498db;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.1s;
+        }
+
+        .button-group button:hover {
+            background-color: #2980b9;
+            transform: translateY(-2px);
+        }
+
+        .button-group button:active {
+            transform: translateY(0);
+        }
+
+        #chatbot {
+            position: relative;
+        }
+
+        #chat-messages {
+            height: 500px;
+            overflow-y: auto;
+            border: 1px solid #bdc3c7;
+            border-radius: 4px;
+            padding: 10px;
+            margin-bottom: 10px;
+            resize: vertical;
+            min-height: 300px;
+            max-height: 800px;
+        }
+
+        .message {
+            margin-bottom: 10px;
+            padding: 12px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            max-width: 80%;
+        }
+
+        .user-message {
+            background-color: #e8f6fe;
+            text-align: right;
+            margin-left: auto;
+        }
+
+        .bot-message {
+            background-color: #f0f0f0;
+            word-wrap: break-word;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+        }
+
+        .media-container {
+            margin-top: 10px;
+        }
+
+        .media-container video,
+        .media-container img,
+        .media-container audio {
+            max-width: 100%;
+            border-radius: 4px;
+        }
+
+        .track-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            border-bottom: 1px solid #ecf0f1;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .track-item:hover {
+            background-color: #f7f7f7;
+        }
+
+        .track-number {
+            margin-right: 10px;
+            font-weight: bold;
+        }
+
+        .video-card {
+            margin-bottom: 20px;
+            transition: transform 0.3s;
+        }
+
+        .video-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .video-card h3 {
+            margin-bottom: 10px;
+        }
+
+        #bg-color-btn {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            background-color: #3498db;
+            color: #fff;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        #bg-color-btn:hover {
+            background-color: #2980b9;
+        }
+
+        #color-preview {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-right: 10px;
+            border: 2px solid #fff;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                position: static;
+                height: auto;
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            .button-group button {
+                width: 100%;
+            }
+        }
+
+
+
+        .video-container {
+            min-width: 70%;
+            /* Điều chỉnh giá trị này theo nhu cầu */
+            min-height: 70%;
+            object-fit: contain;
+            max-width: 100%;
+            height: 0;
+            padding-bottom: 177.78%;
+            position: relative;
+        }
+
+        .video-container video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            min-width: 30%;
+            min-height: 30%;
+        }
+
+
+
+
+
+
+        .image-slider img {
+            width: 100%;
+            /* Chiều rộng luôn chiếm đầy container */
+            height: auto;
+            /* Chiều cao tự động điều chỉnh theo tỷ lệ */
+            object-fit: cover;
+            /* Hình ảnh sẽ lấp đầy toàn bộ diện tích, cắt bỏ phần thừa */
+        }
+
+        /* Nếu muốn quy định tỷ lệ cố định là 16:9 */
+        .image-slider img {
+            aspect-ratio: 16/9;
+        }
+
+        /* Nếu muốn quy định tỷ lệ cố định là 9:16 */
+        .image-slider img {
+            aspect-ratio: 9/16;
+        }
+
+
+        /* New styles for resizable chatbot */
+        #chatbot .resize-handle {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 15px;
+            height: 15px;
+            background-color: #3498db;
+            cursor: se-resize;
+        }
+
+        #chat-messages::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        #chat-messages::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        #chat-messages::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+
+        #chat-messages::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
+        .youtube-video-container {
+            position: relative;
+            width: 100%;
+            padding-bottom: 50.25%;
+            /* Tỷ lệ 16:9 */
+            height: 0;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .youtube-video-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .video-container {
+            position: relative;
+            width: 100%;
+            padding-bottom: 56.25%;
+            /* Tỷ lệ 16:9 */
+            height: 0;
+            overflow: hidden;
+            margin-top: 20px;
+        }
+
+        .video-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .video-card {
+            margin-bottom: 20px;
+            transition: transform 0.3s;
+            width: 100%;
+            max-width: 600px;
+            /* Giới hạn chiều rộng tối đa trên desktop */
+        }
+
+        @media (max-width: 768px) {
+            .video-card {
+                max-width: 100%;
+                /* Sử dụng toàn bộ chiều rộng trên mobile */
+            }
+        }
+
+        .video-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .video-card h3 {
+            margin-bottom: 10px;
+            font-size: 18px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="sidebar">
+        <h1>Integrated App</h1>
+        <ul class="sidebar-nav">
+            <li><a href="#chatbot"><i class="fas fa-comments"></i> Chatbot</a></li>
+            <li><a href="#tiktok"><i class="fab fa-tiktok"></i> TikTok</a></li>
+            <li><a href="#soundcloud"><i class="fab fa-soundcloud"></i> SoundCloud</a></li>
+            <li><a href="#youtube"><i class="fab fa-youtube"></i> YouTube</a></li>
+        </ul>
+    </div>
+    <div class="main-content">
+        <div class="content-area">
+            <div id="chatbot" class="section">
+                <h2><i class="fas fa-comments"></i> Chatbot</h2>
+                <div id="chat-messages"></div>
+                <div class="resize-handle"></div>
+            </div>
+            <div id="tiktok" class="section">
+                <h2><i class="fab fa-tiktok"></i> TikTok Download</h2>
+                <div class="input-container">
+                    <input type="text" id="tiktokLink" class="input-field" placeholder="Enter TikTok video link">
+                    <button class="download-button" onclick="getTikTokVideo()">Download TikTok</button>
+                </div>
+                <div id="videoContainer" class="video-container"></div>
+                <div id="imageContainer" class="image-slider"></div>
+                <div id="musicInfoContainer" class="music-info">
+                    <h3>Music Information</h3>
+                    <p id="musicTitle" title="Title: Loading...">Title: Loading...</p>
+                    <p id="musicArtist" title="Artist: Loading...">Artist: Loading...</p>
+                    <p id="musicAlbum" title="Album: Loading...">Album: Loading...</p>
+                    <audio id="musicPlayer" controls></audio>
+                </div>
+            </div>
+            <div id="soundcloud" class="section">
+                <h2><i class="fab fa-soundcloud"></i> SoundCloud Player</h2>
+                <div id="tracks"></div>
+                <div id="player"></div>
+            </div>
+            <div id="youtube" class="section">
+                <h2><i class="fab fa-youtube"></i> YouTube Viewer</h2>
+                <button id="bg-color-btn" onclick="changeBackgroundColor()">
+                    <span id="color-preview"></span>Change background color
+                </button>
+                <div id="videoList"></div>
+            </div>
+        </div>
+        <div class="input-container">
+            <input type="text" id="unified-input" class="input-field"
+                placeholder="Type a message, search for music or videos...">
+            <div class="button-group">
+                <button onclick="sendMessage()"><i class="fas fa-paper-plane"></i> Send</button>
+                <button onclick="searchSoundCloud()"><i class="fab fa-soundcloud"></i> Search Music</button>
+                <button onclick="searchYoutube()"><i class="fab fa-youtube"></i> Search Videos</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="imageModal" class="modal">
+        <span class="close">&times;</span>
+        <img class="modal-content" id="modalImg">
+    </div>
+
+    <script>
+        // Add this JavaScript for the resizable chatbot
+        const resizeHandle = document.querySelector('#chatbot .resize-handle');
+
+        let isResizing = false;
+
+        resizeHandle.addEventListener('mousedown', (e) => {
+            isResizing = true;
+            e.preventDefault();
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isResizing) return;
+
+            const newHeight = e.clientY - chatMessages.getBoundingClientRect().top;
+            chatMessages.style.height = `${newHeight}px`;
+        });
+
+        document.addEventListener('mouseup', () => {
+            isResizing = false;
+        });
+
+        const chatMessages = document.getElementById('chat-messages');
+        const unifiedInput = document.getElementById('unified-input');
+        // Đối tượng chứa các cụm từ theo ngôn ngữ
+        const languageStrings = {
+            'en': {
+                downloadKeywords: ['download', 'get'],
+                availableVersions: 'Available versions of',
+                version: 'Version',
+                errorNotFound: 'Sorry, no information found for the app',
+                errorTypo: 'Did you mean',
+                errorGeneral: 'Sorry, an error occurred while processing your request.',
+                checkAppName: 'Are you sure you entered the correct app name?'
+            },
+            'vi': {
+                downloadKeywords: ['tải', 'lấy'],
+                availableVersions: 'Các phiên bản có sẵn của',
+                version: 'Phiên bản',
+                errorNotFound: 'Xin lỗi, không tìm thấy thông tin về ứng dụng',
+                errorTypo: 'Ý bạn là',
+                errorGeneral: 'Xin lỗi, đã xảy ra lỗi khi xử lý yêu cầu của bạn.',
+                checkAppName: 'Bạn có chắc chắn đã nhập đúng tên ứng dụng không?'
+            }
+        };
+
+        function changeBackgroundColor() {
+            const numColors = 3;
+            let totalR = 0, totalG = 0, totalB = 0;
+
+            for (let i = 0; i < numColors; i++) {
+                const randomColor = Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
+                totalR += parseInt(randomColor.slice(0, 2), 16);
+                totalG += parseInt(randomColor.slice(2, 4), 16);
+                totalB += parseInt(randomColor.slice(4, 6), 16);
+            }
+
+            const avgR = Math.floor(totalR / numColors).toString(16).padStart(2, '0');
+            const avgG = Math.floor(totalG / numColors).toString(16).padStart(2, '0');
+            const avgB = Math.floor(totalB / numColors).toString(16).padStart(2, '0');
+
+            const newColor = `#${avgR}${avgG}${avgB}`;
+            document.body.style.backgroundColor = newColor;
+            document.getElementById('color-preview').style.backgroundColor = newColor;
+        }
+
+        changeBackgroundColor();
+
+        document.querySelectorAll('.sidebar-nav a').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+
+        async function sendMessage() {
+            const message = unifiedInput.value.trim();
+
+            if (message) {
+                addMessage('user', message);
+                unifiedInput.value = '';
+
+                let botReply, mediaUrl, audioUrl;
+
+                if (message.toLowerCase().includes('tải') || message.toLowerCase().startsWith('tôi muốn tải')) {
+                    botReply = await handleDownloadRequest(message);
+                } else {
+                    const [command, ...args] = message.split(' ');
+                    try {
+                        const response = await fetch('/api/command', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ command, args }),
+                        });
+                        const result = await response.json();
+                        botReply = result.message;
+                        mediaUrl = result.mediaUrl;
+                        audioUrl = result.audioUrl;
+
+                        if (response.embedHtml) {
+                            document.getElementById('videoContainer').innerHTML = response.embedHtml;
+                        }
+                    } catch (error) {
+                        botReply = 'Error: ' + error.message;
+                    }
+                }
+
+                addMessage('bot', botReply, mediaUrl, audioUrl);
+            }
+        }
+
+        function addMessage(sender, text, mediaUrl = null, audioUrl = null) {
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('message', sender === 'user' ? 'user-message' : 'bot-message');
+
+            const textWithLineBreaks = text.replace(/\n/g, '<br>');
+            messageDiv.innerHTML = textWithLineBreaks;
+
+            const linkifiedText = textWithLineBreaks.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank">$1</a>');
+
+            if (mediaUrl) {
+                const mediaContainer = document.createElement('div');
+                mediaContainer.className = 'media-container';
+
+                if (mediaUrl.endsWith('.mp4')) {
+                    const video = document.createElement('video');
+                    video.src = mediaUrl;
+                    video.controls = true;
+                    mediaContainer.appendChild(video);
+                } else if (mediaUrl.endsWith('.jpg') || mediaUrl.endsWith('.png') || mediaUrl.endsWith('.gif')) {
+                    const img = document.createElement('img');
+                    img.src = mediaUrl;
+                    mediaContainer.appendChild(img);
+                }
+                messageDiv.appendChild(mediaContainer);
+            }
+
+            if (audioUrl) {
+                const mediaContainer = document.createElement('div');
+                mediaContainer.className = 'media-container';
+                const audio = document.createElement('audio');
+                audio.src = audioUrl;
+                audio.controls = true;
+                mediaContainer.appendChild(audio);
+                messageDiv.appendChild(mediaContainer);
+            }
+
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function searchSoundCloud() {
+            const keyword = unifiedInput.value.trim();
+            if (keyword) {
+                var apiKey = "kzkhanhz7517222606";
+                var apiUrl = "https://z75ww9-2007.csb.app/soundcloud/search?apikey=" + apiKey + "&keyword=" + encodeURIComponent(keyword);
+
+                fetch(apiUrl)
+                    .then((response) => response.json())
+                    .then((data) => {
+                        if (data.collection.length > 0) {
+                            var tracksHtml = "";
+                            data.collection.forEach(function (track, index) {
+                                tracksHtml += `
+                                <div class="track-item" data-uri="${track.uri}" onclick="playTrack('${track.uri}')">
+                                    <div class="track-number">${index + 1}</div>
+                                    <div class="track-title">${track.title}</div>
+                                </div>
+                                `;
+                            });
+                            document.getElementById("tracks").innerHTML = tracksHtml;
+                        } else {
+                            document.getElementById("tracks").innerHTML = '<p style="text-align: center;">No tracks found</p>';
+                        }
+                    })
+                    .catch((error) => {
+                        console.error("Error:", error);
+                        document.getElementById("tracks").innerHTML = '<p style="text-align: center;">Error fetching data</p>';
+                    });
+            }
+        }
+
+        function playTrack(trackUri) {
+            var playerHtml = `
+                <iframe id="soundCloudPlayer" width="100%" height="166" scrolling="no" frameborder="no" allow="autoplay" 
+                src="https://w.soundcloud.com/player/?url=${trackUri}&color=%23ff4757&auto_play=true&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=true">
+                </iframe>
+                `;
+            var playerContainer = document.getElementById("player");
+            playerContainer.innerHTML = playerHtml;
+            playerContainer.classList.add("pulse");
+            setTimeout(() => playerContainer.classList.remove("pulse"), 2000);
+        }
+
+        function searchYoutube() {
+            const keyword = unifiedInput.value.trim();
+            if (keyword) {
+                axios.get('https://www.googleapis.com/youtube/v3/search', {
+                    params: {
+                        part: 'snippet',
+                        maxResults: 10,
+                        key: 'AIzaSyB2w3bNAHWIDxG2RbCpskSKGnu8g5eu8RM',
+                        type: 'video',
+                        videoDefinition: 'high',
+                        videoEmbeddable: true,
+                        q: keyword
+                    }
+                })
+                    .then(function (response) {
+                        const videos = response.data.items;
+                        const videoList = document.querySelector('#videoList');
+                        videoList.innerHTML = '';
+                        for (let i = 0; i < videos.length; i++) {
+                            const videoId = videos[i].id.videoId;
+                            const videoTitle = videos[i].snippet.title;
+                            const videoCard = document.createElement('div');
+                            videoCard.className = 'video-card';
+                            videoCard.innerHTML = `
+                                <h3>${videoTitle}</h3>
+                                <iframe width="100%" height="215" src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe>
+                            `;
+                            videoList.appendChild(videoCard);
+                        }
+                    })
+                    .catch(function (error) {
+                        console.log(error);
+                        document.querySelector('#videoList').innerHTML = '<p style="text-align: center;">Error fetching videos</p>';
+                    });
+            }
+        }
+
+        unifiedInput.addEventListener('keypress', function (event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        // Hàm tính Levenshtein distance
+        function levenshteinDistance(a, b) {
+            const matrix = [];
+
+            for (let i = 0; i <= b.length; i++) {
+                matrix[i] = [i];
+            }
+
+            for (let j = 0; j <= a.length; j++) {
+                matrix[0][j] = j;
+            }
+
+            for (let i = 1; i <= b.length; i++) {
+                for (let j = 1; j <= a.length; j++) {
+                    if (b.charAt(i - 1) === a.charAt(j - 1)) {
+                        matrix[i][j] = matrix[i - 1][j - 1];
+                    } else {
+                        matrix[i][j] = Math.min(
+                            matrix[i - 1][j - 1] + 1,
+                            matrix[i][j - 1] + 1,
+                            matrix[i - 1][j] + 1
+                        );
+                    }
+                }
+            }
+
+            return matrix[b.length][a.length];
+        }
+
+        // Hàm tìm tên ứng dụng gần đúng nhất
+        function findClosestAppName(inputName, appList) {
+            let closestName = '';
+            let minDistance = Infinity;
+
+            for (let appName of appList) {
+                const distance = levenshteinDistance(inputName.toLowerCase(), appName.toLowerCase());
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    closestName = appName;
+                }
+            }
+
+            // Nếu khoảng cách Levenshtein nhỏ hơn hoặc bằng 2, coi như đã tìm thấy tên gần đúng
+            return minDistance <= 2 ? closestName : null;
+        }
+
+        function detectLanguage(message) {
+            for (let lang in languageStrings) {
+                for (let keyword of languageStrings[lang].downloadKeywords) {
+                    if (message.toLowerCase().includes(keyword)) {
+                        return lang;
+                    }
+                }
+            }
+            return 'en'; // Mặc định là tiếng Anh nếu không xác định được
+        }
+
+        async function handleDownloadRequest(message) {
+            try {
+                const response = await fetch('./json/app.json');
+                const data = await response.json();
+
+                const lang = detectLanguage(message);
+                const strings = languageStrings[lang];
+
+                // Loại bỏ các từ khóa tải xuống khỏi tin nhắn
+                let appName = message.toLowerCase();
+                for (let keyword of strings.downloadKeywords) {
+                    appName = appName.replace(keyword, '').trim();
+                }
+
+                const appKeys = Object.keys(data);
+                let appKey = null;
+
+                // Tìm tên ứng dụng chính xác
+                for (let key of appKeys) {
+                    if (key.toLowerCase() === appName) {
+                        appKey = key;
+                        break;
+                    }
+                }
+
+                // Nếu không tìm thấy tên chính xác, tìm tên gần đúng
+                if (!appKey) {
+                    appKey = findClosestAppName(appName, appKeys);
+                }
+
+                if (appKey) {
+                    const versions = data[appKey].versions;
+                    let replyMessage = `${strings.availableVersions} ${appKey}:\n`;
+                    let speechText = `${strings.availableVersions} ${appKey}: `;
+
+                    versions.forEach(version => {
+                        replyMessage += `${strings.version} ${version.number}: <a href="${version.link}" target="_blank">${version.link}</a>\n`;
+                        speechText += `${strings.version} ${version.number}. `;
+                    });
+
+                    const speech = new SpeechSynthesisUtterance(speechText);
+                    speech.lang = lang === 'vi' ? 'vi-VN' : 'en-US';
+
+                    window.speechSynthesis.speak(speech);
+
+                    return replyMessage;
+                } else {
+                    const closestName = findClosestAppName(appName, appKeys);
+                    let errorMessage = `${strings.errorNotFound} "${appName}". `;
+                    if (closestName) {
+                        errorMessage += `${strings.errorTypo} "${closestName}"?`;
+                    } else {
+                        errorMessage += strings.checkAppName;
+                    }
+                    const speech = new SpeechSynthesisUtterance(errorMessage);
+                    speech.lang = lang === 'vi' ? 'vi-VN' : 'en-US';
+                    window.speechSynthesis.speak(speech);
+                    return errorMessage;
+                }
+            } catch (error) {
+                console.error('Error reading app data:', error);
+                const lang = detectLanguage(message);
+                const errorMessage = languageStrings[lang].errorGeneral;
+                const speech = new SpeechSynthesisUtterance(errorMessage);
+                speech.lang = lang === 'vi' ? 'vi-VN' : 'en-US';
+                window.speechSynthesis.speak(speech);
+                return errorMessage;
+            }
+        }
+
+
+
+        function getTikTokVideo() {
+            const tiktokLink = document.getElementById("tiktokLink").value;
+            fetch(
+                "https://j8c2z9-2007.csb.app/tiktok/downloadvideo?url=" + tiktokLink
+            )
+                .then((response) => response.json())
+                .then((data) => {
+                    if (data.data) {
+                        // Clear previous video and images before adding new ones
+                        const videoContainer = document.getElementById("videoContainer");
+                        const imageContainer = document.getElementById("imageContainer");
+
+                        videoContainer.innerHTML = "";
+                        imageContainer.innerHTML = "";
+
+                        if (data.data.play) { // Check if video data exists
+                            const videoUrl = data.data.play;
+                            const videoElement = document.createElement("video");
+                            videoElement.controls = true;
+                            videoElement.src = videoUrl;
+                            videoElement.autoplay = true;
+                            videoContainer.appendChild(videoElement);
+                        }
+
+                        if (data.data.music_info) { // Check if music info data exists
+                            const musicInfo = data.data.music_info;
+                            document.getElementById("musicTitle").textContent = `Title: ${musicInfo.title}`;
+                            document.getElementById("musicArtist").textContent = `Artist: ${musicInfo.author}`;
+                            document.getElementById("musicAlbum").textContent = `Album: ${musicInfo.original ? "Original" : "Cover"
+                                }`;
+
+                            const musicPlayer = document.getElementById("musicPlayer");
+                            musicPlayer.src = musicInfo.play;
+                        }
+
+                        if (data.data.images) { // Check if image data exists (avoid unnecessary loops)
+                            const images = data.data.images;
+                            images.forEach((imageUrl) => {
+                                const imageElement = document.createElement("img");
+                                imageElement.src = imageUrl;
+                                imageElement.onclick = () => openModal(imageUrl); // Assuming openModal function exists
+                                imageContainer.appendChild(imageElement);
+                            });
+                        }
+                    }
+                })
+                .catch((error) => {
+                    console.error("Error fetching video:", error);
+                    alert(
+                        "Error fetching video. Please check the link or try again later."
+                    );
+                });
+        }
+
+
+
+        function openModal(imgSrc) {
+            const modal = document.getElementById("imageModal");
+            const modalImg = document.getElementById("modalImg");
+            modal.style.display = "block";
+            modalImg.src = imgSrc;
+        }
+
+        document.querySelector(".close").onclick = function () {
+            document.getElementById("imageModal").style.display = "none";
+        };
+
+        window.onclick = function (event) {
+            const modal = document.getElementById("imageModal");
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        };
+
+        async function downloadYouTube() {
+            const youtubeLink = unifiedInput.value.trim();
+            if (youtubeLink) {
+                try {
+                    const response = await fetch(`/api/youtube/download?url=${encodeURIComponent(youtubeLink)}`);
+                    const data = await response.json();
+                    if (data.downloadUrl) {
+                        window.open(data.downloadUrl, '_blank');
+                    } else {
+                        alert('Unable to download the video. Please try again.');
+                    }
+                } catch (error) {
+                    console.error('Error downloading YouTube video:', error);
+                    alert('An error occurred while trying to download the video.');
+                }
+            } else {
+                alert('Please enter a YouTube video URL.');
+            }
+        }
+
+        // Hàm mới để gửi tin nhắn chào mừng
+        async function sendWelcomeMessage() {
+            const welcomeMessage = "Xin chào! Chào mừng bạn đến với ứng dụng tích hợp của chúng tôi.";
+            addMessage('bot', welcomeMessage);
+
+            // Đọc tin nhắn chào mừng
+            const speech = new SpeechSynthesisUtterance(welcomeMessage);
+            speech.lang = 'vi-VN';
+            window.speechSynthesis.speak(speech);
+
+            try {
+                const response = await fetch('./json/app.json');
+                const data = await response.json();
+                const appList = Object.keys(data).join(', ');
+                const appListMessage = `Danh sách các ứng dụng có thể tải: ${appList}`;
+                addMessage('bot', appListMessage);
+
+                // Đọc danh sách ứng dụng
+                const appListSpeech = new SpeechSynthesisUtterance(appListMessage);
+                appListSpeech.lang = 'vi-VN';
+                window.speechSynthesis.speak(appListSpeech);
+            } catch (error) {
+                console.error('Error reading app data:', error);
+                addMessage('bot', 'Xin lỗi, đã xảy ra lỗi khi tải danh sách ứng dụng.');
+            }
+        }
+
+        // Gọi hàm sendWelcomeMessage khi trang được tải
+        document.addEventListener('DOMContentLoaded', (event) => {
+            sendWelcomeMessage();
+        });
+
+
+
+
+
+
+
+
+
+        const video = document.querySelector('video');
+        const container = video.parentNode;
+
+        function setAspectRatio() {
+            const videoRatio = video.videoWidth / video.videoHeight;
+            const containerRatio = container.clientWidth / container.clientHeight;
+
+            if (videoRatio > containerRatio) {
+                container.style.height = 'auto';
+                container.style.width = '100%';
+            } else {
+                container.style.width = 'auto';
+                container.style.height = '100%';
+            }
+        }
+
+        video.addEventListener('loadedmetadata', setAspectRatio);
+        window.addEventListener('resize', setAspectRatio);
+
+
+    </script>
+</body>
+
+</html>
